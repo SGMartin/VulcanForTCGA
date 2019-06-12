@@ -49,15 +49,15 @@ class Pacients:
         self.CNVData = pd.melt(self.CNVData, id_vars=['Gene', 'Role in Cancer', 'OncoDrive', 'DriveValue'],
         var_name='BarCode', value_name='Alteration')
 
-        
-        self.AltDict = {0 : 'cnv_neutral', 1: 'cnv_gain', -1:'cnv_loss'}
+        #Drop neutral/0 CNV
+        self.CNVData.drop(self.CNVData[self.CNVData['Alteration'] == 0].index, inplace=True)
+        self.AltDict = {1: 'cnv_gain', -1:'cnv_loss'}
         self.CNVData = self.CNVData.replace({'Alteration': self.AltDict})
 
         #Rename Sample from TCGA-XXXXXX- to TP/TM etc...
         self.CNVData['Sample'] = self.CNVData['BarCode'].apply(Utils.TranslateSampleType)
         self.CNVData           = self.CNVData.drop(['BarCode', 'OncoDrive', 'DriveValue'], axis=1)
 
-        
 
 
     
