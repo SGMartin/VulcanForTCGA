@@ -14,6 +14,7 @@ class MetaParser:
     def __init__(self, sourceMetaData):
         print("Reading metadata...")
         self.ReadJSON(sourceMetaData)
+        print("Metadata loaded")
 
     
     def ReadJSON(self, sourceMetaData):
@@ -21,11 +22,11 @@ class MetaParser:
         with open(sourceMetaData) as json_file:
             rawData = json.load(json_file)
         
-        self.PacientCases = dict()
+        self.PacientBarCodes = dict()
 
-	#Fetch cases and aliquots ids together
+	#Fetch cases and aliquots ids together Entity submitter id is TCGA bar code
         for pacients in rawData[0]['associated_entities']:
-            self.PacientCases[pacients['entity_id']] = pacients['case_id']
+            self.PacientBarCodes[pacients['entity_id']] = pacients['entity_submitter_id']
 
 
     

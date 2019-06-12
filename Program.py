@@ -1,12 +1,18 @@
-#
-# C# >>>>>> Python :P
+#   
+#   VulcanForTCGA 
+#     
+#   Author: Santiago García Martín
+#   Date:   03-6-2019
+
 import sys
 import pandas as pd
-import classes.VulcanGeneWrapper as VulcanGeneWrapper
+
+import classes.Pacients as Pacients
 import classes.ParseMAF as MAFParser
 import classes.ParseCNV as CNVParser
 import classes.ParseMetadata as MetaParser
 import classes.VulcanGeneReport as Reporter
+import classes.VulcanGeneWrapper as VulcanGeneWrapper
 
 ReportDirectory = ""
 SourceFiles     = ""
@@ -17,13 +23,20 @@ def main():
   #  SourceFiles     = input("Input project directory:\n")
   #  ReportDirectory = input("Input the directory to save the report to:\n")
     
+    #Input variables
     SourceFiles     = "/home/sagarcia/rawtest/"
     ReportDirectory = "/home/sagarcia/Desktop/Report/"
     VulcanContext   =  ""
+    
+    #Global objects
     MutationData   = pd.DataFrame
     CopyNumberData = pd.DataFrame
+    VulcanQuery    = ""
+
 
     ParseRawData()
+    QueryVulcanForGenes()
+    AnalyzePacientGeneticData()
     GenerateReports(ReportDirectory)
 
     
@@ -41,10 +54,25 @@ def ParseRawData():
     CopyNumberData  = CNVParser.ParseCNV("/home/sagarcia/rawtest/CNV.txt", VulcanGenes.VulcanGeneList)
     
     #TODO: This should not be called here
-    CopyNumberData.AnnotateCases(MetaData.PacientCases)
+    CopyNumberData.AnnotateCases(MetaData.PacientBarCodes)
 
-    #TEST
-    test = Reporter.VulcanGeneReport(MutationData, CopyNumberData)
+def QueryVulcanForGenes():
+  
+  global VulcanQuery  
+  VulcanQuery = Reporter.VulcanGeneReport(MutationData.MutFilteredData, CopyNumberData.CNVFilteredData)
+
+
+#TODO: ask for analysis method: per tumor/per pacient 
+def AnalyzePacientGeneticData():
+
+  global MutationData
+  
+  PacientGroup = MutationData.MutFilteredData.groupby('CaseID')
+    
+  #split mutation data based on ID cases. Returns a collection of dataframes 
+  #with the column as key  
+  for caseid, Mutations in PacientGroup:
+      Pacients.Pacients(caseid, Mutations, CopyNumberData.CNVFilteredData, VulcanQuery)
 
     #TODO: move this to classes?
 def GenerateReports(reportDirectory):

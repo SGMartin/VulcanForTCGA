@@ -5,6 +5,7 @@
 #   Date:   03-6-2019
 
 import pandas as  pd
+import Utils
 
 class ParseMAF:
  
@@ -24,18 +25,17 @@ class ParseMAF:
         #Load empty, instance-scope dataframe
         self.MutFilteredData = pd.DataFrame()
 
-        print("Starting MAF analysis...")
+        print("Starting MAF filtering...")
 
         self.RawMaF = pd.read_csv(sourceMAF, sep='\t', header=5, low_memory=False) #TODO: handle the '#' headers instead of skipping 4 lines
        
        #Filter the Dataframe
         self.FilterForVulcan(vulcanGenes) #TODO: this argument passing could be improved
-        self.AnnotateCancerRole()
-        self.AnnotateOncoDrive()
         self.AnnotateTruncatedMissense()
         self.CalculateVariantFrequency()
+        self.SetSampleType()
 
-        print("MAF analysis COMPLETED!")
+        print("MAF filtering COMPLETED!")
 
     def FilterForVulcan(self, vulcanGeneList):
 
@@ -63,34 +63,10 @@ class ParseMAF:
         #Reset the index
         self.MutFilteredData = self.MutFilteredData.reset_index(drop=True)
 
-    
-    def AnnotateCancerRole(self):
-
-        #Load CGC .TSV file
-        self.CancerGeneCensus = pd.read_csv("/home/sagarcia/CancerGeneCensus.tsv", sep='\t')
-        
-        #Annotate gene role from CGC
-        self.CancerGeneCensus   = self.CancerGeneCensus.loc[:,['Gene Symbol', 'Role in Cancer']]
-        self.MutFilteredData = self.MutFilteredData.merge(self.CancerGeneCensus, how='left', left_on='Gene', right_on='Gene Symbol')
-        self.MutFilteredData = self.MutFilteredData.drop('Gene Symbol', axis=1)
-    
-            
-    #Further annotation based on https://bbglab.irbbarcelona.org/oncodriverole/
-    #Data downloaded 6-6-19
-    def AnnotateOncoDrive(self):
-
-        #Load oncodrive table        
-        self.OncoDrive = pd.read_csv("/home/sagarcia/oncodrive.txt", sep='\t')
-
-        #Annotate inferred LoF/GoF
-        self.OncoDrive = self.OncoDrive.loc[:,['SYM', 'oncodriveROLE', 'Value']]
-        self.OncoDrive.columns = ['GenSYM', 'OncoDrive','DriveValue']
-        self.MutFilteredData = self.MutFilteredData.merge(self.OncoDrive, how='left', left_on='Gene', right_on='GenSYM')
-        self.MutFilteredData = self.MutFilteredData.drop('GenSYM', axis=1)
-
-        #I replace Loss of function and Activating with activating and loss for later convenience
-        self.MutFilteredData['OncoDrive'] = self.MutFilteredData['OncoDrive'].str.replace('Loss of function', 'loss')
-        self.MutFilteredData['OncoDrive'] = self.MutFilteredData['OncoDrive'].str.replace('Activating', 'activating')    
+        #Annotates from COSMIC and oncodrive
+        #TODO: new method for this?
+        self.MutFilteredData = Utils.AnnotateCancerRole(self.MutFilteredData)
+        self.MutFilteredData = Utils.AnnotateOncoDrive(self.MutFilteredData)
     
     def AnnotateTruncatedMissense(self):
         
@@ -106,3 +82,8 @@ class ParseMAF:
 
         #Drop depths columns. Not needed anymore
         self.MutFilteredData = self.MutFilteredData.drop(['TotalTumorDepth', 'VariantDepth'], axis=1)
+    
+
+    #Translates the tumor bar code based on sample type
+    def SetSampleType(self):
+        self.MutFilteredData['Sample'] = Utils.TranslateSampleType(self.MutFilteredData['TumorBarCode'])

@@ -4,6 +4,7 @@
 #   Author: Santiago García Martín
 #   Date:   6-6-2019
 
+import Utils
 import json
 import mygene
 import pandas as pd
@@ -12,7 +13,7 @@ class ParseCNV:
     
     def __init__(self, sourceFile, vulcanGeneList):
 
-        print("Starting CNV analysis...")
+        print("Starting CNV filtering...")
 
         self.CNVFilteredData = pd.DataFrame
         self.RawCNV = pd.read_csv(sourceFile, sep='\t')
@@ -22,6 +23,8 @@ class ParseCNV:
 
         self.TranslateEnsemblToHugo()
         self.FilterVulcanGenes(vulcanGeneList)
+
+        print("CNV filtering COMPLETED")
 
     #Translates ID from Ensembl to Hugo.
     #More info: https://docs.mygene.info/en/latest/doc/data.html
@@ -40,7 +43,9 @@ class ParseCNV:
         self.AnnotationDT = self.mg.getgenes(self.geneQuery, fields='symbol', as_dataframe=True)
 
         #map to ensembl... indexes are the same so this ought to work
-        self.CNVFilteredData['Gene Symbol'] = self.AnnotationDT['symbol'].values
+        self.CNVFilteredData['Gene'] = self.AnnotationDT['symbol'].values
+
+        self.CNVFilteredData  = self.CNVFilteredData.drop('Gene Symbol', axis=1)
 
         #dispose of the dataframe
         del self.AnnotationDT
@@ -49,17 +54,27 @@ class ParseCNV:
     #Keeping genes that can be input to vulcan only.
     def FilterVulcanGenes(self, vulcanGenes):
 
-        self.IsInVulcan      = self.CNVFilteredData.loc[:,'Gene Symbol'].isin(vulcanGenes)
+        self.IsInVulcan      = self.CNVFilteredData.loc[:,'Gene'].isin(vulcanGenes)
         self.CNVFilteredData = self.CNVFilteredData[self.IsInVulcan]
 
         #redo the indexes
         self.CNVFilteredData.reset_index(drop=True)
-    
 
-    #alliquot ID is not needed, pacient ID is
+        #TODO: own method for this?
+        #annotating from COSMIC and oncodrive
+
+        self.CNVFilteredData = Utils.AnnotateCancerRole(self.CNVFilteredData)
+        self.CNVFilteredData = Utils.AnnotateOncoDrive(self.CNVFilteredData)
+    
+    #alliquot ID is not needed, pacient ID and tumor code is
+    #the dictionary contains user UID and TCGA sample type separated by % character
     #TODO: handle odd rename failing...
-    def AnnotateCases(self, testDict):
-        self.CNVFilteredData.rename(testDict, axis = 'columns', inplace=True)
+
+    def AnnotateCases(self, pacientsDict):
+        
+        self.CNVFilteredData.rename(pacientsDict, axis = 'columns', inplace=True)
+
+     
 
 
 
