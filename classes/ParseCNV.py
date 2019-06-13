@@ -21,7 +21,7 @@ class ParseCNV:
         #drop gene id and the cytoband, we don't need it anymore
         self.CNVFilteredData = self.RawCNV.drop(['Gene ID','Cytoband'],axis=1)
 
-        self.TranslateEnsemblToHugo()
+        self.TranslateEnsemblToHugo(vulcanGeneList)
         self.FilterVulcanGenes(vulcanGeneList)
 
         print("CNV filtering COMPLETED")
@@ -29,7 +29,7 @@ class ParseCNV:
     #Translates ID from Ensembl to Hugo.
     #More info: https://docs.mygene.info/en/latest/doc/data.html
 
-    def TranslateEnsemblToHugo(self):
+    def TranslateEnsemblToHugo(self, a):
         
         self.mg = mygene.MyGeneInfo()
         
@@ -49,6 +49,7 @@ class ParseCNV:
 
         #dispose of the dataframe
         del self.AnnotationDT
+    
     
     #TODO: THis is shitty code and you know it. Do smth about it. Do not allow it to depend on above method execution
     #Keeping genes that can be input to vulcan only.

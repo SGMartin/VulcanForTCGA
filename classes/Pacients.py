@@ -14,7 +14,7 @@ import numpy  as np
 
 class Pacients:
 
-    def __init__(self, uniqueID, mutDataFrame, cnvDataFrame, vulcanResults):
+    def __init__(self, uniqueID, mutDataFrame, cnvDataFrame):
 
         self.UID              = uniqueID
         self.MutData          = mutDataFrame
@@ -23,8 +23,7 @@ class Pacients:
 
         self.GetCNVForPacient()
         self.GetMutationTable()
-        self.GeneticLandscape.to_csv(('/home/sagarcia/Desktop/Report/' + 'GLand.csv'), index=None, header=True)
-    
+
     def GetCNVForPacient(self):
         
         #don't worry about multiple bar codes, the participant should be the same
@@ -60,7 +59,7 @@ class Pacients:
 
 
 
-    
+    #TODO read drivevalues, don't trust prefilter
     def GetMutationTable(self):
 
         self.MutData = self.MutData.filter(['Gene', 'Consequence', 'Role in Cancer',
@@ -82,5 +81,10 @@ class Pacients:
 
         self.MutData = self.MutData.drop(['Missense', 'Truncated', 'Consequence', 'OncoDrive'], axis=1)
 
-        self.GeneticLandscape = self.MutData.append(self.CNVData)
+        self.GeneticLandscape = self.MutData.append(self.CNVData, ignore_index=True, sort=False)
+
+        self.GeneticLandscape['Pacient'] = self.UID
+        self.GeneticLandscape['Impact']  = self.GeneticLandscape['Alteration'].apply(Utils.InferAlterationImpact)
+    
+
        

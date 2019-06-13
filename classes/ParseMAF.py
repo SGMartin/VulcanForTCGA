@@ -58,6 +58,12 @@ class ParseMAF:
         SilentMutations         = self.MutFilteredData['Consequence'] == "Silent"
         self.MutFilteredData = self.MutFilteredData[~SilentMutations]
 
+        #Drop mutations with consequence == intron, whatever that means with exome seq.
+
+        IntronicMutations       = self.MutFilteredData['Consequence'] == "Intron"
+        self.MutFilteredData    = self.MutFilteredData[~IntronicMutations]
+
+
         #Clean unnecessary rows
         self.MutFilteredData = self.MutFilteredData.drop('NormalDepth', axis=1)
         #Reset the index

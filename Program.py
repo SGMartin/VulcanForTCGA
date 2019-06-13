@@ -19,69 +19,73 @@ SourceFiles     = ""
 
 
 def main():
-    #TODO: Remember to uncomment this
+  #TODO: Remember to uncomment this
   #  SourceFiles     = input("Input project directory:\n")
   #  ReportDirectory = input("Input the directory to save the report to:\n")
     
-    #Input variables
-    SourceFiles     = "/home/sagarcia/rawtest/"
-    ReportDirectory = "/home/sagarcia/Desktop/Report/"
-    VulcanContext   =  ""
+  #Input variables
+  SourceFiles     = "/home/sagarcia/rawtest/"
+  ReportDirectory = "/home/sagarcia/Desktop/Report/"
+  VulcanContext   =  ""
     
-    #Global objects
-    MutationData   = pd.DataFrame
-    CopyNumberData = pd.DataFrame
-    VulcanQuery    = ""
+#Call VulcanSpot to ask for input gene list
+  VulcanGenes = VulcanGeneWrapper.VulcanInputGenes("/home/sagarcia/Desktop/Report/", "PANCREAS")
 
+  MutationData   = ParseMAFData(1, VulcanGenes.GeneList).MutFilteredData #filtered data from maf file
+  CopyNumberData = ParseCNVData(1, VulcanGenes.GeneList).CNVFilteredData #filtered data from cnv file  
+  MutationAndCNV = AnalyzePacientGeneticData(MutationData, CopyNumberData) #final table summarising CNVs and mutations
 
-    ParseRawData()
-    QueryVulcanForGenes()
-    AnalyzePacientGeneticData()
-    GenerateReports(ReportDirectory)
+  VulcanQuery    = QueryVulcanForGenes(MutationAndCNV, "PANCREAS") #Treatments from VulcanSpot as json response
 
-    
-def ParseRawData():
+  GenerateReports(ReportDirectory, MutationData, CopyNumberData, MutationAndCNV)    
 
-    global MutationData
-    global CopyNumberData
+def ParseMAFData(rawMafData, vulcanGenes):
 
-    #Call VulcanSpot to ask for input gene list
-    VulcanGenes = VulcanGeneWrapper.VulcanInputGenes("/home/sagarcia/Desktop/Report/", "PANCREAS")
+  FilteredMutations = MAFParser.ParseMAF("/home/sagarcia/rawtest/test.maf", vulcanGenes)
 
-    #Call the wrappers
-    MetaData        = MetaParser.MetaParser("/home/sagarcia/rawtest/metadata.json")
-    MutationData    = MAFParser.ParseMAF("/home/sagarcia/rawtest/test.maf",VulcanGenes.VulcanGeneList)
-    CopyNumberData  = CNVParser.ParseCNV("/home/sagarcia/rawtest/CNV.txt", VulcanGenes.VulcanGeneList)
-    
-    #TODO: This should not be called here
-    CopyNumberData.AnnotateCases(MetaData.PacientBarCodes)
+  return FilteredMutations
 
-def QueryVulcanForGenes():
+def ParseCNVData(rawCNVData, vulcanGenes):
+
+   #Call the wrapper for metadata
+    MetaData = MetaParser.MetaParser("/home/sagarcia/rawtest/metadata.json")
+    FilteredCNVData = CNVParser.ParseCNV("/home/sagarcia/rawtest/CNV.txt", vulcanGenes)
+
+    FilteredCNVData.AnnotateCases(MetaData.PacientBarCodes)
+
+    return FilteredCNVData
+
+def QueryVulcanForGenes(mafFilteredData, cnvFilteredData):
   
-  global VulcanQuery  
-  VulcanQuery = Reporter.VulcanGeneReport(MutationData.MutFilteredData, CopyNumberData.CNVFilteredData)
+  Results = Reporter.VulcanGeneReport(mafFilteredData, cnvFilteredData)
+  return Results
 
 
 #TODO: ask for analysis method: per tumor/per pacient 
-def AnalyzePacientGeneticData():
+def AnalyzePacientGeneticData(filteredMAF, filteredCNV):
 
-  global MutationData
-  
-  PacientGroup = MutationData.MutFilteredData.groupby('CaseID')
+  PacientsData = []
+  PacientGroup = filteredMAF.groupby('CaseID')
     
   #split mutation data based on ID cases. Returns a collection of dataframes 
   #with the column as key  
   for caseid, Mutations in PacientGroup:
-      Pacients.Pacients(caseid, Mutations, CopyNumberData.CNVFilteredData, VulcanQuery)
+    pacient = Pacients.Pacients(caseid, Mutations, filteredCNV)
+    PacientsData.append(pacient.GeneticLandscape)
+    
+  MergedMutAndCNV = pd.concat(PacientsData, axis=0, ignore_index=True)
+      
+  return MergedMutAndCNV
 
-    #TODO: move this to classes?
-def GenerateReports(reportDirectory):
+#TODO: move this to classes?
+def GenerateReports(reportDirectory, mutData, cnvData, pacientSum):
 
     print("Generating reports...")
 
     #Write filtered wrapper data to a comma separated file
-    MutationData.MutFilteredData.to_csv((reportDirectory + 'Mutations.csv'), index=None, header=True)
-    CopyNumberData.CNVFilteredData.to_csv((reportDirectory + 'CNV.csv'), index=None, header=True)
+    mutData.to_csv((reportDirectory + 'Mutations.csv'), index=None, header=True)
+    cnvData.to_csv((reportDirectory + 'CNV.csv'), index=None, header=True)
+    pacientSum.to_csv((reportDirectory + 'PacientSummary.csv'), index=None, header=True)
 
     print("DONE!!!!")
 
