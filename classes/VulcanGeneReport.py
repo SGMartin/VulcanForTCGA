@@ -17,10 +17,12 @@ class VulcanGeneReport:
         self.VulcanResponses = {}
         self.TypeOfCancer    = context
         self.Alterations     = mutationAndCNV
-        self.DrugTable       = pd.DataFrame(columns=['Drug', 'GeneA', 'GeneB', 'Rank'])
+        self.AlternativeDrugTable = pd.DataFrame(columns=['MutatedGene','Druggable', 'AlternateDrug', 'Target', 'Rank'])
+        self.DirectDrugsTable = pd.DataFrame(columns=['MutatedGene', 'Drug', 'Dscore'])
 
         self.QueryVulcan()
-        self.DrugTable.to_csv(('/home/sagarcia/Desktop/Report/DrugTable.csv'), index=None, header=True)
+        self.AlternativeDrugTable.to_csv(('/home/sagarcia/Desktop/Report/DrugTable.csv'), index=None, header=True)
+        self.DirectDrugsTable.to_csv(('/home/sagarcia/Desktop/Report/DirectDrugTable.csv'), index=None, header=True)
 
 
     def QueryVulcan(self):
@@ -44,30 +46,53 @@ class VulcanGeneReport:
             self.VulcanResponses[str(gene)] = response.json()
         
         for gene,response in self.VulcanResponses.items():
-            self.GetAllDrugsForGeneA(gene,response)
+            self.GetAllDrugsForGene(gene, self.TypeOfCancer, response)
+
+
+    def GetAllDrugsForGene(self, inputGene, typeOfCancer, vulcanData):
+
+        self.IsDruggable = False
+        self.GeneStatus  = self.Alterations['Impact'][self.Alterations['Gene'] == inputGene].unique()
+
+        self.TumorDrugData = vulcanData['data'][inputGene][typeOfCancer]
+
+        if 'drugs' in self.TumorDrugData:
+            self.IsDruggable = True
+            
+            #gene A drugs
+            for drug,score in self.TumorDrugData['drugs'].items():
+                self.DirectDrugsTable = self.DirectDrugsTable.append({'MutatedGene': inputGene,
+                'Drug': drug, 'Dscore' : score}, ignore_index=True)
+
+
+        
+        #Let's search for indirect targets nonetheless
+
+        for status in self.GeneStatus:  #check if this gene is LoF/GoF and if there are Genetic Dep. for it
+            if status in self.TumorDrugData['alterations']:
+                #loop through genetic dependencies
+                    for GeneticDependency in self.TumorDrugData['alterations'][status]:
+                        #check if there are drugs for this genetic dependency
+                            if 'drugs' in self.TumorDrugData['alterations'][status][GeneticDependency]:
+                                #found drugs, grab them
+                                    for drug, drugData in self.TumorDrugData['alterations'][status][GeneticDependency]['drugs'].items():
+                                         self.DrugRank = Utils.GetDrugRank(drugData)
+                                         self.AlternativeDrugTable = self.AlternativeDrugTable.append({
+                                             'MutatedGene' : inputGene,
+                                             'Druggable' : self.IsDruggable,
+                                             'AlternateDrug': drug,
+                                             'Target': GeneticDependency,
+                                             'Rank' : self.DrugRank},
+                                         ignore_index=True)
+
 
         
 
-    #let's organize the data
-    def GetAllDrugsForGeneA(self, geneA, vulcanData):
 
-        print("Getting drugs for ", geneA)
 
-        #even If most of the time there should be only ONE value (GoF/LoF), let's not assume that
-        #What if context == 'Pancancer'? let's handle both cases
-        genImpact = self.Alterations['Impact'][self.Alterations['Gene'] == geneA].unique()
 
-        for pImpact in genImpact:
-            if pImpact in vulcanData['data'][geneA][self.TypeOfCancer]['alterations']:                  
-                #let's rename the response for convenience and readability
-                self.GeneticDependencies = vulcanData['data'][geneA][self.TypeOfCancer]['alterations'][pImpact]
 
-                for geneB in self.GeneticDependencies:
-                    if 'drugs' in self.GeneticDependencies[geneB]:
-                        for drug,scores in self.GeneticDependencies[geneB]['drugs'].items():
-                            drugRank = Utils.GetDrugRank(scores)
-                            self.DrugTable = self.DrugTable.append({'Drug':drug,'GeneA':geneA,'GeneB':geneB,'Rank':drugRank}, ignore_index=True)
-                            
+
         
 
 

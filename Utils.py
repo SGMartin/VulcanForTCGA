@@ -98,7 +98,7 @@ def InferAlterationImpact(alteration):
         InferredImpact = Impact[alteration]
         return InferredImpact
     except Exception:
-        print("Alteration ", alteration, " can not be predicted")
+        print("Alteration ", alteration, " cannot be predicted")
         return 'Unknown'
 
 
@@ -107,27 +107,28 @@ def GetDrugRank(drug):
 
     DScore    = 0
     KDCPscore = 0
-    Rank      = 4
+    Rank      = 3
 
-    if drug is False:
-        print("WTF ", drug)
-        return 4
-
-    if 'PANDRUGS' in drug:
-        DScore = drug['PANDRUGS']['score']
+    try:
+        if 'PANDRUGS' in drug:
+            DScore = drug['PANDRUGS']['score']
     
-    if 'LINCS' in drug:
-        KDCPscore = drug['LINCS']['score']
+        if 'LINCS' in drug:
+            KDCPscore = drug['LINCS']['score']
 
-    if DScore >= 0.6:
-        if KDCPscore >= 0.9:
-            Rank = 1
+        if DScore >= 0.6:
+            if KDCPscore >= 0.9:
+                Rank = 1
+            else:
+                Rank = 2
         else:
-            Rank = 2
-    else:
-        Rank = 3
+            Rank = 3
 
-    return Rank
+        return Rank
+
+    except Exception:
+        print("Invalid drug data: ",drug)
+        return -1
 
     
 

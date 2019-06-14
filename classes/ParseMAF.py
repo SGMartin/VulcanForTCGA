@@ -40,6 +40,7 @@ class ParseMAF:
     def FilterForVulcan(self, vulcanGeneList):
 
         #TODO: This method could be split in two and reused between ParseMAF and CNV-cleaning
+        #TODO: handle empty maf files after vulcan filtering. DO NOT let the program crash
         self.RawMaF = self.RawMaF.iloc[:, self.relevantColumns]
 
         #Trim the datased based on Vulcan genes available
