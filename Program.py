@@ -29,13 +29,13 @@ def main():
   VulcanContext   =  ""
     
 #Call VulcanSpot to ask for input gene list
-  VulcanGenes = VulcanGeneWrapper.VulcanInputGenes("/home/sagarcia/Desktop/Report/", "BREAST")
+  VulcanGenes = VulcanGeneWrapper.VulcanInputGenes("/home/sagarcia/Desktop/Report/", "PANCREAS")
 
   MutationData   = ParseMAFData(1, VulcanGenes.GeneList).MutFilteredData #filtered data from maf file
   CopyNumberData = ParseCNVData(1, VulcanGenes.GeneList).CNVFilteredData #filtered data from cnv file  
   MutationAndCNV = AnalyzePacientGeneticData(MutationData, CopyNumberData) #final table summarising CNVs and mutations
 
-  VulcanQuery    = QueryVulcanForGenes(MutationAndCNV, "BREAST") #Treatments from VulcanSpot as json response
+  VulcanQuery    = QueryVulcanForGenes(MutationAndCNV, "PANCREAS") #Treatments from VulcanSpot as json response
 
   GenerateReports(ReportDirectory, MutationData, CopyNumberData, MutationAndCNV)    
 

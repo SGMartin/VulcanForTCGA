@@ -76,14 +76,15 @@ class VulcanGeneReport:
                             if 'drugs' in self.TumorDrugData['alterations'][status][GeneticDependency]:
                                 #found drugs, grab them
                                     for drug, drugData in self.TumorDrugData['alterations'][status][GeneticDependency]['drugs'].items():
-                                         self.DrugRank = Utils.GetDrugRank(drugData)
-                                         self.AlternativeDrugTable = self.AlternativeDrugTable.append({
-                                             'MutatedGene' : inputGene,
-                                             'Druggable' : self.IsDruggable,
-                                             'AlternateDrug': drug,
-                                             'Target': GeneticDependency,
-                                             'Rank' : self.DrugRank},
-                                         ignore_index=True)
+                                        if drug is not 'validated':
+                                             self.DrugRank = Utils.GetDrugRank(drugData)
+                                             self.AlternativeDrugTable = self.AlternativeDrugTable.append({
+                                                'MutatedGene' : inputGene,
+                                                'Druggable' : self.IsDruggable,
+                                                'AlternateDrug': drug,
+                                                'Target': GeneticDependency,
+                                                'Rank' : self.DrugRank},
+                                             ignore_index=True)
 
 
         
