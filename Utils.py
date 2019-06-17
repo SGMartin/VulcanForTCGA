@@ -98,7 +98,7 @@ def InferAlterationImpact(alteration):
         InferredImpact = Impact[alteration]
         return InferredImpact
     except Exception:
-        print("Alteration ", alteration, " cannot be predicted")
+        print("Alteration ", alteration, " cannot be predicted!")
         return 'Unknown'
 
 

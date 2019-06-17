@@ -21,15 +21,30 @@ class ParseCNV:
         #drop gene id and the cytoband, we don't need it anymore
         self.CNVFilteredData = self.RawCNV.drop(['Gene ID','Cytoband'],axis=1)
 
-        self.TranslateEnsemblToHugo(vulcanGeneList)
+        self.TranslateEnsemblToHugo()
         self.FilterVulcanGenes(vulcanGeneList)
 
         print("CNV filtering COMPLETED")
 
+    #TODO: finish this
+    def TranslateHugoToEnsembl(self, vulcanGenes):
+
+        print("Annotating CNV...")
+
+        #Trimming version number from ENSEMB
+        self.CNVFilteredData['Gene Symbol'] = self.CNVFilteredData['Gene Symbol'].str.split('.').str[0].str.strip()
+
+        self.mg = mygene.MyGeneInfo()
+
+        #query input genes only, annotate CNVs and delete the rest...
+        #It is faster than annotating the whole CNV file and then filtering for vulcan
+        self.AnnotationDT = self.mg.query(vulcanGenes, scopes='symbol', fields='ensembl.gene', species='human', as_dataframe=True)
+
+
     #Translates ID from Ensembl to Hugo.
     #More info: https://docs.mygene.info/en/latest/doc/data.html
 
-    def TranslateEnsemblToHugo(self, a):
+    def TranslateEnsemblToHugo(self):
         
         self.mg = mygene.MyGeneInfo()
         

@@ -21,9 +21,6 @@ class VulcanGeneReport:
         self.DirectDrugsTable = pd.DataFrame(columns=['MutatedGene', 'Drug', 'Dscore'])
 
         self.QueryVulcan()
-        self.AlternativeDrugTable.to_csv(('/home/sagarcia/Desktop/Report/DrugTable.csv'), index=None, header=True)
-        self.DirectDrugsTable.to_csv(('/home/sagarcia/Desktop/Report/DirectDrugTable.csv'), index=None, header=True)
-
 
     def QueryVulcan(self):
         

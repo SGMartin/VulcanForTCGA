@@ -32,7 +32,7 @@ class VulcanInputGenes:
 
     def __WriteGeneReport(self,GeneListToReport, _inputDir):
 
-        self.reportDir = _inputDir + "InputGenes.txt"
+        self.reportDir = _inputDir + "/EligibleGenes.txt"
         self.GeneReport = open(self.reportDir, 'w')
 
         for lines in GeneListToReport:

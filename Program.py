@@ -13,43 +13,43 @@ import classes.ParseCNV as CNVParser
 import classes.ParseMetadata as MetaParser
 import classes.VulcanGeneReport as Reporter
 import classes.VulcanGeneWrapper as VulcanGeneWrapper
+import classes.Figures as FMaker
 
 ReportDirectory = ""
 SourceFiles     = ""
 
 
 def main():
-  #TODO: Remember to uncomment this
-  #  SourceFiles     = input("Input project directory:\n")
-  #  ReportDirectory = input("Input the directory to save the report to:\n")
-    
+
+  #TODO: better handling of input etc...
   #Input variables
-  SourceFiles     = "/home/sagarcia/rawtest/"
-  ReportDirectory = "/home/sagarcia/Desktop/Report/"
-  VulcanContext   =  ""
+  SourceFiles     =  input("Input project directory: ")
+  ReportDirectory =  input("Input results directory: ")
+  VulcanContext   =  input("Input Vulcan context: ")
     
-#Call VulcanSpot to ask for input gene list
-  VulcanGenes = VulcanGeneWrapper.VulcanInputGenes("/home/sagarcia/Desktop/Report/", "PANCREAS")
+  #Call VulcanSpot to ask for input gene list
+  VulcanGenes = VulcanGeneWrapper.VulcanInputGenes(ReportDirectory, VulcanContext)
 
-  MutationData   = ParseMAFData(1, VulcanGenes.GeneList).MutFilteredData #filtered data from maf file
-  CopyNumberData = ParseCNVData(1, VulcanGenes.GeneList).CNVFilteredData #filtered data from cnv file  
+  MutationData   = ParseMAFData(SourceFiles, VulcanGenes.GeneList).MutFilteredData #filtered data from maf file
+  CopyNumberData = ParseCNVData(SourceFiles, VulcanGenes.GeneList).CNVFilteredData #filtered data from cnv file  
+  
   MutationAndCNV = AnalyzePacientGeneticData(MutationData, CopyNumberData) #final table summarising CNVs and mutations
+  VulcanQuery    = QueryVulcanForGenes(MutationAndCNV, VulcanContext) #Treatments from VulcanSpot as json response
 
-  VulcanQuery    = QueryVulcanForGenes(MutationAndCNV, "PANCREAS") #Treatments from VulcanSpot as json response
+  #Write data
+  GenerateReports(ReportDirectory, MutationData, CopyNumberData, MutationAndCNV, VulcanQuery)    
 
-  GenerateReports(ReportDirectory, MutationData, CopyNumberData, MutationAndCNV)    
+def ParseMAFData(sourceDir, vulcanGenes):
 
-def ParseMAFData(rawMafData, vulcanGenes):
-
-  FilteredMutations = MAFParser.ParseMAF("/home/sagarcia/rawtest/test.maf", vulcanGenes)
+  FilteredMutations = MAFParser.ParseMAF((sourceDir + "/mutation.maf"), vulcanGenes)
 
   return FilteredMutations
 
-def ParseCNVData(rawCNVData, vulcanGenes):
+def ParseCNVData(sourceDir, vulcanGenes):
 
    #Call the wrapper for metadata
-    MetaData = MetaParser.MetaParser("/home/sagarcia/rawtest/metadata.json")
-    FilteredCNVData = CNVParser.ParseCNV("/home/sagarcia/rawtest/CNV.txt", vulcanGenes)
+    MetaData = MetaParser.MetaParser((sourceDir + "/metadata.json"))
+    FilteredCNVData = CNVParser.ParseCNV((sourceDir + "/cnv.txt"), vulcanGenes)
 
     FilteredCNVData.AnnotateCases(MetaData.PacientBarCodes)
 
@@ -78,14 +78,25 @@ def AnalyzePacientGeneticData(filteredMAF, filteredCNV):
   return MergedMutAndCNV
 
 #TODO: move this to classes?
-def GenerateReports(reportDirectory, mutData, cnvData, pacientSum):
+def GenerateReports(reportDirectory, mutData, cnvData, pacientSum, vulcanReport):
 
     print("Generating reports...")
 
     #Write filtered wrapper data to a comma separated file
-    mutData.to_csv((reportDirectory + 'Mutations.csv'), index=None, header=True)
-    cnvData.to_csv((reportDirectory + 'CNV.csv'), index=None, header=True)
-    pacientSum.to_csv((reportDirectory + 'PacientSummary.csv'), index=None, header=True)
+    mutData.to_csv((reportDirectory + '/Mutations.csv'), index=None, header=True)
+    cnvData.to_csv((reportDirectory + '/CNV.csv'), index=None, header=True)
+    pacientSum.to_csv((reportDirectory + '/PacientSummary.csv'), index=None, header=True)
+
+    vulcanReport.AlternativeDrugTable.to_csv((reportDirectory + '/DrugTable.csv'), index=None, header=True)
+    vulcanReport.DirectDrugsTable.to_csv((reportDirectory + '/DirectDrugTable.csv'), index=None, header=True)
+
+    #testing
+    print("Writing figures")
+    FMaker.NewSummaryforCNV(cnvData, reportDirectory)
+    FMaker.NewSummaryForMutations(mutData, reportDirectory)
+    
+    #CNV_figure.savefig((reportDirectory + "/cnv.png"))
+    #Mut_figure.savefig((reportDirectory + "/mut.png"))
 
     print("DONE!!!!")
 
