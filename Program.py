@@ -94,6 +94,8 @@ def GenerateReports(reportDirectory, mutData, cnvData, pacientSum, vulcanReport)
     print("Writing figures")
     FMaker.NewSummaryforCNV(cnvData, reportDirectory)
     FMaker.NewSummaryForMutations(mutData, reportDirectory)
+    FMaker.NewImpactSummary(pacientSum, reportDirectory)
+    FMaker.NewAlterationSummary(pacientSum, reportDirectory)
     
     #CNV_figure.savefig((reportDirectory + "/cnv.png"))
     #Mut_figure.savefig((reportDirectory + "/mut.png"))

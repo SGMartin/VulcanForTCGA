@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 
 def NewSummaryforCNV(cnvFilteredData, sourceDir):
 
-    #start new figure so that no figure is saved on top of the last one
-    plt.clf()
 
     #Count occurrences of amplification and losses
     CNVSummary = cnvFilteredData.apply(pd.Series.value_counts, axis=1)[[-1,0,1]].fillna(0)
@@ -29,18 +27,20 @@ def NewSummaryforCNV(cnvFilteredData, sourceDir):
     
     CNVSummary['Category'] = pd.Categorical(CNVSummary['Category'])
 
+    #start new figure so that no figure is saved on top of the last one
+    plt.figure(figsize=(15,10))
     #plot the data as horizontal barplot
     CNVplot = sns.barplot(x='Frequency', y='Gene', hue='Category', data=CNVSummary,ci=None,palette=['C3','C0','k'])
     CNVplot.set(xlabel="% of cases", ylabel='CNV affected Genes')
 
-    fig = CNVplot.get_figure()
-    fig.save_figure((sourceDir + '/cnv.png'), dpi=400)
+    plt.savefig((sourceDir + "/cnv.png"))
 
+  
 
 def NewSummaryForMutations(mutationFilteredData, sourceDir):
 
     #start new figure so that no figure is saved on top of the last one
-    plt.clf()
+    plt.figure(figsize=(15,10))
 
     pacientCount = mutationFilteredData['CaseID'].nunique()
 
@@ -60,8 +60,39 @@ def NewSummaryForMutations(mutationFilteredData, sourceDir):
     MutationPlot = sns.barplot(x='Gene', y='Frequency', data=GenesTable)
     MutationPlot.set(xlabel='Affected genes', ylabel='Cases proportion with at least one SPM')
 
-    MutationPlot = MutationPlot.get_figure()
-    MutationPlot.save_figure((sourceDir + '/mutations.png'))
+    plt.savefig((sourceDir + "/mutation.png"))
+
+
+def NewImpactSummary(pacientData, sourceDir):
+
+    plt.figure(figsize=(15,10))
+
+    figure = sns.catplot(x='Impact', kind='count', data=pacientData, palette=['C0','C3','k'])
+    figure.set(xlabel='Mutations by predicted impact', ylabel='')
+    plt.savefig((sourceDir + "/ImpactSummary.png"))
+
+
+def NewAlterationSummary(pacientData, sourceDir):
+
+    plt.figure(figsize=(15,10))
+
+    pacientCount = pacientData['Pacient'].nunique()
+
+    AlterationCount    = pacientData.groupby('Gene')['Pacient'].nunique()
+    PacientAlterations = pd.DataFrame(AlterationCount)
+    PacientAlterations['Gene'] = PacientAlterations.index
+    PacientAlterations['Frequency'] = PacientAlterations['Pacient'] / pacientCount * 100
+
+    PacientAlterations = PacientAlterations.sort_values('Frequency', ascending=False)
+
+    #plot alteration frequency (no matter if cnv or somatic point mut)
+    figure = sns.barplot(x='Gene',y='Frequency', data=PacientAlterations)
+    figure.set(xlabel='Affected genes', ylabel='% of cases')
+
+    plt.savefig((sourceDir + "/AlterationSummary.png"))
+
+
+
 
 
 
