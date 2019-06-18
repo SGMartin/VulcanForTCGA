@@ -96,6 +96,8 @@ def GenerateReports(reportDirectory, mutData, cnvData, pacientSum, vulcanReport)
     FMaker.NewSummaryForMutations(mutData, reportDirectory)
     FMaker.NewImpactSummary(pacientSum, reportDirectory)
     FMaker.NewAlterationSummary(pacientSum, reportDirectory)
+    FMaker.NewGeneticDependencies(pacientSum, vulcanReport.AlternativeDrugTable, reportDirectory)
+    FMaker.NewCoverageRatio(pacientSum, vulcanReport.AlternativeDrugTable, reportDirectory)
     
     #CNV_figure.savefig((reportDirectory + "/cnv.png"))
     #Mut_figure.savefig((reportDirectory + "/mut.png"))
