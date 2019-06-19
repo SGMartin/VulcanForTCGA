@@ -7,6 +7,7 @@
 import sys
 import pandas as pd
 
+import classes.CaseFilter as CaseFilter
 import classes.Pacients as Pacients
 import classes.ParseMAF as MAFParser
 import classes.ParseCNV as CNVParser
@@ -26,14 +27,17 @@ def main():
   SourceFiles     =  input("Input project directory: ")
   ReportDirectory =  input("Input results directory: ")
   VulcanContext   =  input("Input Vulcan context: ")
-    
+
+  #load ignore list if it exists
+  CasesIgnoreList = CaseFilter.CaseFilter(SourceFiles).IgnoreList
+
   #Call VulcanSpot to ask for input gene list
   VulcanGenes = VulcanGeneWrapper.VulcanInputGenes(ReportDirectory, VulcanContext)
 
   MutationData   = ParseMAFData(SourceFiles, VulcanGenes.GeneList).MutFilteredData #filtered data from maf file
   CopyNumberData = ParseCNVData(SourceFiles, VulcanGenes.GeneList).CNVFilteredData #filtered data from cnv file  
   
-  MutationAndCNV = AnalyzePacientGeneticData(MutationData, CopyNumberData) #final table summarising CNVs and mutations
+  MutationAndCNV = AnalyzePacientGeneticData(MutationData, CopyNumberData, CasesIgnoreList) #final table summarising CNVs and mutations
   VulcanQuery    = QueryVulcanForGenes(MutationAndCNV, VulcanContext) #Treatments from VulcanSpot as json response
 
   #Write data
@@ -62,18 +66,22 @@ def QueryVulcanForGenes(mafFilteredData, cnvFilteredData):
 
 
 #TODO: ask for analysis method: per tumor/per pacient 
-def AnalyzePacientGeneticData(filteredMAF, filteredCNV):
+def AnalyzePacientGeneticData(filteredMAF, filteredCNV, pacientsToIgnore):
 
   PacientsData = []
   PacientGroup = filteredMAF.groupby('CaseID')
+
+  #load ignore list to skip pacients
+  
     
   #split mutation data based on ID cases. Returns a collection of dataframes 
   #with the column as key  
   for caseid, Mutations in PacientGroup:
-    pacient = Pacients.Pacients(caseid, Mutations, filteredCNV)
-    PacientsData.append(pacient.GeneticLandscape)
-    
-  MergedMutAndCNV = pd.concat(PacientsData, axis=0, ignore_index=True)
+
+    if caseid not in pacientsToIgnore:
+     pacient = Pacients.Pacients(caseid, Mutations, filteredCNV)
+     PacientsData.append(pacient.GeneticLandscape)  
+     MergedMutAndCNV = pd.concat(PacientsData, axis=0, ignore_index=True)
       
   return MergedMutAndCNV
 
