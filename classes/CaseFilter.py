@@ -27,5 +27,5 @@ class CaseFilter:
 
         self.fileToParse.close()
 
-        print("Detected ", len(self.IgnoreFile))
+        print("Detected ", len(self.IgnoreFile), " cases to ignore")
           
