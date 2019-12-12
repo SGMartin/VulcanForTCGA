@@ -1,3 +1,6 @@
+# DEPRECATED
+This codebase is DEPRECATED and superseded by TCGASpot. DO NOT USE.
+
 # VulcanForTCGA
 
 Dependencies:
